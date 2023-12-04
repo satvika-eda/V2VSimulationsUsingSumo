@@ -1,8 +1,9 @@
 import numpy as np
 from collections import deque
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.optimizers import Adam
+from tensorflow.python.keras.models import Sequential
+from tensorflow.python.keras.layers import Dense
+from tensorflow.python.keras.optimizers import Adam
+
 
 # state params : Position, Velocity, Acceleration, direction
 # action params : acc/decc, lane changing, turning 
@@ -152,6 +153,7 @@ action_size = 5   # Adjust based on the number of actions available
 state_set = [ego_vehicle]
 # Initialize the DQN agent
 agent = DQNAgent(state_size, action_size)
+NUM_EPISODES = 10
 
 # Training loop (Replace this with your V2V simulation environment interactions)
 for episode in range(NUM_EPISODES):

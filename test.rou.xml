@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2023-12-02 23:11:18 by Eclipse SUMO netedit Version 1.19.0
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <!-- VTypes -->
+    <vType id="t_0" vClass="truck"/>
+    <vType id="t_1"/>
+    <!-- Routes -->
+    <route id="r_0" edges="-E4 -E1"/>
+    <!-- Vehicles, persons and containers (sorted by depart) -->
+    <trip id="t_0" depart="0.00" departSpeed="10.00" from="E1" to="E2"/>
+    <trip id="t_1" depart="0.00" departSpeed="10.00" from="E3" to="E4"/>
+    <trip id="t_2" depart="0.00" from="E3" to="E2"/>
+    <vehicle id="v_0" type="DEFAULT_CONTAINERTYPE" depart="0.00" route="r_0"/>
+    <vehicle id="v_1" type="DEFAULT_BIKETYPE" depart="0.00" route="r_0"/>
+    <vehicle id="v_2" type="t_0" depart="0.00" route="r_0"/>
+</routes>
