@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2023-12-04 17:26:11 by Eclipse SUMO netedit Version 1.19.0
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <!-- Routes -->
+    <route id="r_0" edges="E7 E8 E9"/>
+    <route id="r_1" edges="E7 E10 E11 E12 E9"/>
+    <!-- Vehicles, persons and containers (sorted by depart) -->
+    <!-- <vehicle id="v_0" depart="0.00" departLane="1" route="r_0"/>
+    <vehicle id="v_1" depart="0.00" departLane="1" arrivalLane="0" route="r_0"/>
+    <vehicle id="v_10" depart="0.00" departLane="1" arrivalLane="0" route="r_0"/>
+    <vehicle id="v_11" depart="0.00" departLane="1" arrivalLane="0" route="r_0"/>
+    <vehicle id="v_12" depart="0.00" departLane="1" arrivalLane="0" route="r_0"/>
+    <vehicle id="v_13" depart="0.00" departLane="1" arrivalLane="0" route="r_0"/>
+    <vehicle id="v_14" depart="0.00" departLane="1" arrivalLane="0" route="r_0"/>
+    <vehicle id="v_15" depart="0.00" departLane="1" arrivalLane="1" route="r_0"/>
+    <vehicle id="v_16" depart="0.00" departLane="1" arrivalLane="1" route="r_0"/>
+    <vehicle id="v_17" depart="0.00" departLane="1" arrivalLane="1" route="r_0"/>
+    <vehicle id="v_18" depart="0.00" departLane="1" arrivalLane="1" route="r_0"/>
+    <vehicle id="v_19" depart="0.00" departLane="1" arrivalLane="0" route="r_0"/>
+    <vehicle id="v_2" depart="0.00" departLane="1" arrivalLane="0" route="r_0"/>
+    <vehicle id="v_3" depart="0.00" departLane="1" arrivalLane="0" route="r_0"/>
+    <vehicle id="v_4" depart="0.00" departLane="1" arrivalLane="0" route="r_0"/>
+    <vehicle id="v_5" depart="0.00" departLane="1" arrivalLane="0" route="r_1"/>
+    <vehicle id="v_6" depart="0.00" departLane="1" arrivalLane="0" route="r_1"/>
+    <vehicle id="v_7" depart="0.00" departLane="1" arrivalLane="0" route="r_1"/>
+    <vehicle id="v_8" depart="0.00" departLane="1" arrivalLane="0" route="r_1"/>
+    <vehicle id="v_9" depart="0.00" departLane="1" arrivalLane="0" route="r_0"/> -->
+
+    <flow id="flow1" begin="0" end="10" number="5" route="r_0" type="DEFAULT_VEHTYPE" color="0,0,1"/>
+    <flow id="flow2" begin="0" end="10" number="5" route="r_0" type="DEFAULT_VEHTYPE" color="0,1,0" arrivalLane="1" departLane="1"/>
+</routes>
