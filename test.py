@@ -3,7 +3,7 @@ import sumolib
 import time
 sumoBinary = sumolib.checkBinary("sumo-gui")
 
-sumoCmd = [sumoBinary, "-c", "demo.sumocfg", "--start", "--collision.stoptime", "100", "--time-to-teleport", "-2", "--quit-on-end"]
+sumoCmd = [sumoBinary, "-c", "demo2.sumocfg", "--start", "--collision.stoptime", "100", "--time-to-teleport", "-2", "--quit-on-end"]
 # "--collision.action", "none",
 # "--collision-mingap-factor 0", "--collision.action warn"
 traci.start(sumoCmd)
@@ -49,22 +49,25 @@ def addAggressiveToAllVehicles(addedVehicles):
 
 addedVehciles = []
 # edges = traci.ge
-while step < 30:
+while step < 40:
     traci.simulationStep()
     time.sleep(1)
     addedVehciles = addAggressiveToAllVehicles(addedVehciles)
-    if step == 5:
+    if step == 8:
         traci.vehicle.setSpeed("flow1.0", 0)
         traci.vehicle.setColor("flow1.0", (255,0,0))
 
         traci.vehicle.setSpeed("flow2.0", 0)
         traci.vehicle.setColor("flow2.0", (255,0,0))
+        traci.vehicle.setRoute("flow2.2", traci.route.getEdges("r_1"))
     collisions = traci.simulation.getCollisions()
     for collision in collisions:
         traci.vehicle.setSpeed(collision.collider, 0)
         traci.vehicle.setEmergencyDecel(collision.collider, 1000)
         traci.vehicle.setColor(collision.collider, (255,0,0))
         traci.vehicle.setSpeed(collision.victim, 0)
+    
+        
     step += 1
 # collisions = traci.simulation.getCollisions()
 traci.close()

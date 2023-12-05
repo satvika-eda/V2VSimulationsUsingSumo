@@ -3,9 +3,6 @@ from collections import deque
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.layers import Dense
 from tensorflow.python.keras.optimizers import Adam
-import traci
-import sumolib
-import time
 
 
 # state params : Position, Velocity, Acceleration, direction
@@ -176,17 +173,3 @@ def calculate_reward(state, action, next_state):
     # Implement your reward logic based on the V2V simulation states, actions, and transitions
     return 0  # Replace this with your calculated reward
 
-# You'll need to replace the random state generation and action selection with actual V2V simulation data and logic.
-def runSimulation():
-    sumoBinary = sumolib.checkBinary("sumo-gui")
-    sumoCmd = [sumoBinary, "-c", "test.sumocfg", "--start"]
-    traci.start(sumoCmd)
-
-    step = 0
-    vehicles = traci.vehicle.getLoadedIDList()
-    desiredRange = 10
-    for vehicle in vehicles: 
-        traci.vehicle.subscribeContext(vehicle, traci.constants.CMD_GET_VEHICLE_VARIABLE, desiredRange, [traci.constants.VAR_SPEED, traci.constants.VAR_POSITION, traci.constants.VAR_ANGLE, traci.constants.VAR_ACCELERATION])
-
-    while step < 30:
-        
