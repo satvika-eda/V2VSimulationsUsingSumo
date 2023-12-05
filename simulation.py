@@ -1,6 +1,7 @@
 import traci
 import time
 import sumolib
+from rltest import *
 
 def add_aggressive_behavior(veh_id):
     traci.vehicle.setAccel(veh_id, 100)
@@ -24,7 +25,27 @@ def addAggressiveToAllVehicles(addedVehicles):
 
 def contextSubscription(vehicle):
     desiredRange = 10
-    traci.vehicle.subscribeContext(vehicle, traci.constants.CMD_GET_VEHICLE_VARIABLE, desiredRange, [traci.constants.VAR_SPEED, traci.constants.VAR_POSITION, traci.constants.VAR_ANGLE, traci.constants.VAR_ACCELERATION])
+    traci.vehicle.subscribeContext(vehicle, traci.constants.CMD_GET_VEHICLE_VARIABLE, desiredRange)
+
+def getV2VState(vehicle):
+    return V2VState(getState(vehicle), getNearByVehicles(vehicle))
+
+def getState(vehicle):
+    id = vehicle
+    pos = traci.vehicle.getPosition(vehicle)
+    speed = traci.vehicle.getSpeed(vehicle)
+    acc = traci.vehicle.getAccel(vehicle)
+    angle = traci.vehicle.getAngle(vehicle)
+    return VehicleState(id, pos, speed, acc, angle)
+
+def getNearByVehicles(vehicle):
+    nearbyVehicles = []
+    res = traci.vehicle.getContextSubscriptionResults(vehicle)
+    for i in res:
+        if i != vehicle:
+            nearbyVehicles.append(getstate(i))
+    return nearbyVehicles
+    
 
 # You'll need to replace the random state generation and action selection with actual V2V simulation data and logic.
 def runSimulation():
@@ -33,9 +54,16 @@ def runSimulation():
     sumoCmd = [sumoBinary, "-c", "demo2.sumocfg", "--start", "--collision.stoptime", "100", "--time-to-teleport", "-2", "--quit-on-end"]
     traci.start(sumoCmd)
     step = 0
+    all_vehicles = traci.vehicle.getIDList()
+    print(all_vehicles)
     while step < 30:
         traci.simulationStep()
         time.sleep(1)
+        currentVehicles = traci.vehicle.getIDList()
+        stateSpace = []
+        for vehicle in currentVehicles:
+            stateSpace.append(getV2VState(vehicle))
+        
         addedVehicles = addAggressiveToAllVehicles(addedVehicles)
         if step == 8:
             traci.vehicle.setSpeed("flow1.0", 0)

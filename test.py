@@ -46,6 +46,14 @@ def addAggressiveToAllVehicles(addedVehicles):
             addedVehciles.append(vehicle)
     return addedVehciles
 
+def contextSubscription(vehicle):
+    desiredRange = 20
+    traci.vehicle.subscribeContext(vehicle, traci.constants.CMD_GET_VEHICLE_VARIABLE, desiredRange)
+
+def getSubscriptionResults(vehicle):
+    res = traci.vehicle.getContextSubscriptionResults(vehicle)
+    print(res)
+
 
 addedVehciles = []
 # edges = traci.ge
@@ -59,7 +67,10 @@ while step < 40:
 
         traci.vehicle.setSpeed("flow2.0", 0)
         traci.vehicle.setColor("flow2.0", (255,0,0))
-        traci.vehicle.setRoute("flow2.2", traci.route.getEdges("r_1"))
+        # traci.vehicle.setRoute("flow2.2", traci.route.getEdges("r_1"))
+    if step > 5:    
+        contextSubscription("flow2.2")
+        getSubscriptionResults("flow2.2")
     collisions = traci.simulation.getCollisions()
     for collision in collisions:
         traci.vehicle.setSpeed(collision.collider, 0)

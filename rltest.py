@@ -3,7 +3,7 @@ from collections import deque
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.layers import Dense
 from tensorflow.python.keras.optimizers import Adam
-
+import pettingzoo
 
 # state params : Position, Velocity, Acceleration, direction
 # action params : acc/decc, lane changing, turning 
@@ -16,7 +16,8 @@ class V2VState:
         self.nearby_vehicles = nearby_vehicles
 
 class VehicleState:
-    def __init__(self, position, speed, acceleration, direction):
+    def __init__(self, id, position, speed, acceleration, direction):
+        self.id = id
         self.position = position
         self.speed = speed
         self.acceleration = acceleration
@@ -105,9 +106,9 @@ def is_efficient_action(action):
 ### DQN 
 
 class DQNAgent:
-    def __init__(self, state_size, action_size):
+    def __init__(self, state_size):
         self.state_size = state_size
-        self.action_size = action_size
+        # self.action_size = []
         self.memory = deque(maxlen=2000)
         self.gamma = 0.95  # Discount rate
         self.epsilon = 1.0  # Exploration rate
@@ -148,25 +149,26 @@ class DQNAgent:
             self.epsilon *= self.epsilon_decay
 
 # Define state and action sizes
-state_size = 10  # Adjust based on your actual state representation size
-action_size = 5   # Adjust based on the number of actions available
+state_size # Adjust based on your actual state representation size
+action_size = 3  # Adjust based on the number of actions available
 state_set = [ego_vehicle]
 # Initialize the DQN agent
 agent = DQNAgent(state_size, action_size)
 NUM_EPISODES = 10
 
 # Training loop (Replace this with your V2V simulation environment interactions)
-for episode in range(NUM_EPISODES):
-    for ego_v in state_set:
-        state = ego_v
-        done = False
-        while not done:
-            action = agent.act(state)
-            next_state = np.random.random((1, state_size))  # Replace this with your actual next state
-            reward = calculate_reward(state, action, next_state)  # Calculate reward based on your reward function
-            agent.remember(state, action, reward, next_state, done)
-            state = next_state
-            agent.replay(batch_size=32)  # Train the agent
+def train():
+    for episode in range(NUM_EPISODES):
+        for ego_v in state_set:
+            state = ego_v
+            done = False
+            while not done:
+                action = agent.act(state)
+                next_state = np.random.random((1, state_size))  # Replace this with your actual next state
+                reward = calculate_reward(state, action, next_state)  # Calculate reward based on your reward function
+                agent.remember(state, action, reward, next_state, done)
+                state = next_state
+                agent.replay(batch_size=32)  # Train the agent
 
 # Define your reward calculation function based on your V2V simulation context
 def calculate_reward(state, action, next_state):
