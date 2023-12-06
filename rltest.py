@@ -16,12 +16,13 @@ class V2VState:
         self.nearby_vehicles = nearby_vehicles
 
 class VehicleState:
-    def __init__(self, id, position, speed, acceleration, direction):
+    def __init__(self, id, position, speed, acceleration, direction, lane):
         self.id = id
         self.position = position
         self.speed = speed
         self.acceleration = acceleration
         self.direction = direction
+        self.lane = lane
 
 ##Sample data
 
@@ -149,7 +150,7 @@ class DQNAgent:
             self.epsilon *= self.epsilon_decay
 
 # Define state and action sizes
-state_size # Adjust based on your actual state representation size
+state_size = 10 # Adjust based on your actual state representation size
 action_size = 3  # Adjust based on the number of actions available
 state_set = [ego_vehicle]
 # Initialize the DQN agent
