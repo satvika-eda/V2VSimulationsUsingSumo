@@ -2,6 +2,7 @@ import traci
 import time
 import sumolib
 from DQNModel import *
+import math
 
 addedVehicles = []
 allVehicles = []
@@ -32,21 +33,42 @@ def contextSubscription(vehicle):
     traci.vehicle.subscribeContext(vehicle, traci.constants.CMD_GET_VEHICLE_VARIABLE, desiredRange)
 
 def getV2VState(vehicle):
-    return [getState(vehicle), getNearByVehicles(vehicle)]
+    state = np.concatenate((getState(vehicle), getNearByVehicles(vehicle)), dtype=np.float32)
+    while len(state) != 60:
+        state = np.append(state, np.array([0, 0, 0, 0, 0, 0], dtype=np.float32))
+    return state
+    # return np.array([getState(vehicle), getNearByVehicles(vehicle)], dtype=np.float32)
 
 def getState(vehicle):
-    id = vehicle
+    # id = vehicle
     current_vehicles = traci.vehicle.getLoadedIDList()
     if vehicle in current_vehicles:
-        pos = traci.vehicle.getPosition(vehicle)
+        print("vehicle: ",vehicle)
+        pos = traci.vehicle.getPosition(vehicle) 
+    
+        print("pos : ", pos)
         speed = traci.vehicle.getSpeed(vehicle)
+        print("speed : ", speed)
         acc = traci.vehicle.getAccel(vehicle)
+        print("acc : ", acc)
         angle = traci.vehicle.getAngle(vehicle)
-        lane = traci.vehicle.getLaneID(vehicle)
-        return np.array([id, pos[0], pos[1], speed, acc, angle, lane[-1]], dtype=str)
-    else:
+        if angle in range(-360,360):
+            lane = traci.vehicle.getRoadID(vehicle)
+            pos = (0,0)
+            speed = 0.0
+            angle = 90.0
+        else:
+            if vehicle[-3] == 1:
+                lane = "0"
+            else:
+                lane = "1"
         
-        return np.array([0, 0, 0, 0, 0, 0, 0])
+
+        # traci.vehicle.getju
+        # print(lane)
+        return np.array([pos[0], pos[1], speed, acc, angle, lane[-1]], dtype=np.float32)
+    else:
+        return np.array([0, 0, 0, 0, 0, 0])
 
 def getNearByVehicles(vehicle):
     nearbyVehicles = np.array([])
@@ -59,6 +81,7 @@ def getNearByVehicles(vehicle):
 def start_simulation():
     sumoBinary = sumolib.checkBinary("sumo-gui")
     sumoCmd = [sumoBinary, "-c", "demo2.sumocfg", "--start", "--collision.stoptime", "100", "--time-to-teleport", "-2"]
+    #sumoCmd = [sumoBinary, "-c", "demo2.sumocfg"]
     traci.start(sumoCmd)
 
 def check_contradictions(action):
@@ -80,18 +103,25 @@ def perform_action(vehicle, action):
         traci.vehicle.setAccel(vehicle, traci.vehicle.getAccel(vehicle)+5)
         accelerated.append(vehicle)
     elif action[1]:
-        traci.vehicle.setAccel(vehicle, traci.vehicle.getAccel(vehicle)-5)
+        a = traci.vehicle.getAccel(vehicle)
+        # print("accelration: ", a)
+        # print("acc type: ", type(a))
+        acc = traci.vehicle.getAccel(vehicle) - 5
+        if acc > 0:
+            traci.vehicle.setAccel(vehicle, acc)
+        else:
+            traci.vehicle.setDecel(vehicle, math.fabs(acc))
         decelerated.append(vehicle)
     elif action[2]:
         traci.vehicle.setAccel(vehicle, 0)
     elif action[3]:
-        traci.vehicle.changeLane(vehicle, 0 if getState(vehicle)[6] == 1 else 1, 300)
-    elif action[4]:
-        routes = traci.route.getIDList()
-        if traci.vehicle.getRouteID(vehicle) == routes[0]:
-            traci.vehicle.setRoute(vehicle, routes[1])
-        else:
-            traci.vehicle.setRoute(vehicle, routes[0])
+        traci.vehicle.changeLane(vehicle, 0 if getState(vehicle)[5] == 1 else 1, 300)
+    # elif action[4]:
+    #     routes = traci.route.getIDList()
+    #     if traci.vehicle.getRouteID(vehicle) == routes[0]:
+    #         traci.vehicle.setRoute(vehicle, routes[1])
+    #     else:
+    #         traci.vehicle.setRoute(vehicle, routes[0])
     
 def calculate_reward(vehicle):
     reward = 0
@@ -120,9 +150,12 @@ def calculate_reward(vehicle):
     
 # You'll need to replace the random state generation and action selection with actual V2V simulation data and logic.
 def run_simulation(model):
-    # traci.load(["-c","demo2.sumocfg","--start","--quit-on-end"])
+    #traci.load(["-c","demo2.sumocfg","--start","--quit-on-end"])
+    traci.load(["-c", "demo2.sumocfg", "--start", "--quit-on-end", "--collision.stoptime", "100","--collision.action", "None", "--time-to-teleport", "-2"])
+    # time.sleep(2)
     step = 0
-    while step < 30:
+    while step < 100:
+        print("step: ", step)
         if step == 8:
             traci.vehicle.setSpeed("flow1.0", 0)
             traci.vehicle.setSpeed("flow2.0", 0)
@@ -134,12 +167,14 @@ def run_simulation(model):
                 allVehicles.append(vehicle)
             contextSubscription(vehicle)
             state_space[vehicle] = getV2VState(vehicle)
+            #print("POIs: ", state_space[vehicle])
             #print("vehicle state space: ", vehicle , " space : ", state_space[vehicle])
         addAggressiveToAllVehicles()
         current_actions = {}
         # print("state space before for: ", state_space)
         for vehicle_state in state_space:
             #print("1")
+            # print("POI: ", state_space[vehicle_state])
             action = model.predict_action(state_space[vehicle_state])
             #print(vehicle_state)
             current_actions[vehicle_state] = action
@@ -158,10 +193,13 @@ def run_simulation(model):
             reward = calculate_reward(vehicle)
             # print("ghjk", state_space)
             # state_space_to_array(state_space)
-            model.remember(state_space[vehicle], current_actions[vehicle], reward, getV2VState(vehicle), done)
+            vehiclestate = getV2VState(vehicle)
+            # print(vehiclestate.shape)
+            # print(vehiclestate)
+            model.remember(state_space[vehicle], current_actions[vehicle], getV2VState(vehicle), reward, done)
         step += 1 
         # print("4")
-    
+    print("current episode ended")
         
         # if step == 8:
         #     traci.vehicle.setSpeed("flow1.0", 0)
