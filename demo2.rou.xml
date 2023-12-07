@@ -11,6 +11,6 @@
     <!-- <vehicle id="v_1" begin="0" departLane="0" arrivalLane="0" route="r_0" color="1,0,0"/>
     <vehicle id="v_2" begin="0" departLane="1" arrivalLane="1" route="r_0" color="1,0,0" /> -->
 
-    <flow id="flow1" begin="0" end="100" number="5" route="r_0" type="DEFAULT_VEHTYPE" color="1,1,0" />
-    <flow id="flow2" begin="0" end="100" number="5" route="r_0" type="DEFAULT_TAXITYPE" color="0,1,0" arrivalLane="1" departLane="1"/>
+    <flow id="flow1" begin="0" end="120" number="7" route="r_0" type="DEFAULT_VEHTYPE" color="1,1,0" />
+    <flow id="flow2" begin="0" end="120" number="7" route="r_0" type="DEFAULT_TAXITYPE" color="0,1,0" arrivalLane="1" departLane="1"/>
 </routes>

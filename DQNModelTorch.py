@@ -48,7 +48,7 @@ class V2VRewards:
         # self.efficiency_reward = efficiency_reward
 
 # Example Usage:
-rewards = V2VRewards(-200, 500, -10, -50)
+rewards = V2VRewards(-400, 300, -80, -500)
 
 class DQN(nn.Module):
     def __init__(self, state_size, action_size):
@@ -56,7 +56,8 @@ class DQN(nn.Module):
         self.state_size = state_size
         self.action_size = action_size
         self.memory = []
-        self.layer1 = nn.Linear(60, 5)
+        self.layer1 = nn.Linear(60, 32)
+        self.layer2 = nn.Linear(32, 5)
         # self.layer3 = nn.Linear(16, action_size)
 
     def forward(self, vehicle_states):
@@ -75,9 +76,11 @@ class DQN(nn.Module):
         #     # print(len(vehicles))
         #     vehicle_states = np.append(vehicle_states, np.array([0, 0, 0, 0, 0, 0], dtype=np.float32))
         # print(vehicle_states)
+        print("v s :", vehicle_states)
         x = torch.tensor(vehicle_states)
         # print("I'm here a")
         x = torch.relu(self.layer1(x))
+        x = torch.relu(self.layer2(x))
         # print("I'm here b")
         # x = torch.relu(self.layer2(x))
         x = torch.sigmoid(x)
@@ -94,6 +97,7 @@ class DQN(nn.Module):
         values = self.forward(state)
         # print(values)
         action = []
+        print("values : ", values)
         for i in values:
             if i > 0.5:
                 action.append(True)

@@ -3,15 +3,17 @@ import time
 import sumolib
 from DQNModelTorch import *
 import math
+import random
 
 addedVehicles = []
 allVehicles = []
 accelerated = []
 decelerated = []
+stopped_vehicles = ['flow1.0', 'flow2.0']
 
 def add_aggressive_behavior(veh_id):
     traci.vehicle.setAccel(veh_id, 100)
-    traci.vehicle.setDecel(veh_id, 4)
+    # traci.vehicle.setDecel(veh_id, 4)
     traci.vehicle.setEmergencyDecel(veh_id, 0.1)
     traci.vehicle.setApparentDecel(veh_id, 0.1)
     traci.vehicle.setTau(veh_id, 0.1)
@@ -30,54 +32,66 @@ def addAggressiveToAllVehicles():
             addedVehicles.append(vehicle)
 
 def contextSubscription(vehicle):
-    desiredRange = 30
-    traci.vehicle.subscribeContext(vehicle, traci.constants.CMD_GET_VEHICLE_VARIABLE, desiredRange)
+    if vehicle not in stopped_vehicles:
+        desiredRange = 30
+        traci.vehicle.subscribeContext(vehicle, traci.constants.CMD_GET_VEHICLE_VARIABLE, desiredRange)
 
 def getV2VState(vehicle):
-    state = np.concatenate((getState(vehicle), getNearByVehicles(vehicle)), dtype=np.float32)
-    while len(state) != 60:
-        state = np.append(state, np.array([0, 0, 0, 0, 0, 0], dtype=np.float32))
-    return state
+    if vehicle not in stopped_vehicles:
+        # print("cvbn", type(getState(vehicle)[0]))
+        # print("n v : ", getNearByVehicles(vehicle))
+        # print("cvbn2", type(getNearByVehicles(vehicle)[0]))
+        state = np.concatenate((getState(vehicle), getNearByVehicles(vehicle)), dtype=np.float32)
+        while len(state) != 60:
+            state = np.append(state, np.array([0, 0, 0, 0, 0, 0], dtype=np.float32))
+        return state
     # return np.array([getState(vehicle), getNearByVehicles(vehicle)], dtype=np.float32)
 
 def getState(vehicle):
+    if vehicle not in stopped_vehicles:
     # id = vehicle
-    current_vehicles = traci.vehicle.getLoadedIDList()
-    if vehicle in current_vehicles:
-        #print("vehicle: ",vehicle)
-        pos = traci.vehicle.getPosition(vehicle) 
-    
-        #print("pos : ", pos)
-        speed = traci.vehicle.getSpeed(vehicle)
-        #print("speed : ", speed)
-        acc = traci.vehicle.getAccel(vehicle)
-        #print("acc : ", acc)
-        angle = traci.vehicle.getAngle(vehicle)
-        if angle in range(-360,360):
-            lane = traci.vehicle.getRoadID(vehicle)
-            pos = (0,0)
-            speed = 10.0
-            angle = 90.0
-        else:
-            if vehicle[-3] == 1:
-                lane = "0"
-            else:
-                lane = "1"
+        current_vehicles = traci.vehicle.getLoadedIDList()
+        if vehicle in current_vehicles:
+            #print("vehicle: ",vehicle)
+            pos = traci.vehicle.getPosition(vehicle) 
         
+            #print("pos : ", pos)
+            speed = traci.vehicle.getSpeed(vehicle)
+            if math.isnan(speed):
+                speed = 0
 
-        # traci.vehicle.getju
-        # print(lane)
-        return np.array([pos[0], pos[1], speed, acc, angle, lane[-1]], dtype=np.float32)
-    else:
-        return np.array([0, 0, 0, 0, 0, 0])
+            #print("speed : ", speed)
+            acc = traci.vehicle.getAccel(vehicle)
+            #print("acc : ", acc)
+            angle = traci.vehicle.getAngle(vehicle)
+            if angle in range(-360,360):
+                lane = traci.vehicle.getRoadID(vehicle)
+                pos = (0,0)
+                speed = 10.0
+                angle = 90.0
+            else:
+                if vehicle[-3] == 1:
+                    lane = "0"
+                else:
+                    lane = "1"
+            return np.array([pos[0], pos[1], speed, acc, angle, lane[-1]], dtype=np.float32)
+        else:
+            return np.array([0, 0, 0, 0, 0, 0], dtype=np.float32)
 
 def getNearByVehicles(vehicle):
-    nearbyVehicles = np.array([])
-    res = traci.vehicle.getContextSubscriptionResults(vehicle)
-    for i in res:
-        if i != vehicle:
-            nearbyVehicles = np.append(nearbyVehicles, getState(i))
-    return nearbyVehicles
+    if vehicle not in stopped_vehicles:
+        nearbyVehicles = np.array([], dtype=np.float32)
+        res = traci.vehicle.getContextSubscriptionResults(vehicle)
+        #("context", res)
+        for i in res:
+            if i != vehicle:
+                nearbyVehicles = np.append(nearbyVehicles, getState(i))
+        #return nearbyVehicles
+        arr = nearbyVehicles[nearbyVehicles != None]
+        arr = np.array(arr, dtype=np.float32)
+        return arr
+    else:
+        return np.array([0, 0, 0, 0, 0, 0], dtype=np.float32)
     
 def start_simulation():
     sumoBinary = sumolib.checkBinary("sumo-gui")
@@ -86,22 +100,25 @@ def start_simulation():
     traci.start(sumoCmd)
 
 def check_contradictions(action):
-    if action[0] and action[1] and action[2]:
-        return -1
-    elif action[3] and action[4]:
-        return -1
-    elif action[0] and action[1]:
+    # if action[0] and action[1] and action[2]:
+    #     return -1
+    # elif action[3] and action[4]:
+    #     return -1
+    if action[0] and action[1]:
         return -1
     elif action[0] and action[2]:
         return -1
     elif action[1] and action[2]:
         return -1
+    elif not action[0] and not action[1] and not action[2] and not action[3] and not action[4]:
+        return -1
     else:
         return 0
 
 def perform_action(vehicle, action):
-    routes = {'E0': ('E0', 'E1', 'E2', 'E3', 'E5', 'E6'), 'E1': ('E1', 'E2', 'E3', 'E5', 'E6'), 'E2': ('E2', 'E3', 'E5', 'E6'), 'E3': ('E3', 'E5', 'E6'), 'E4': ('E4', 'E6'), 'E5': ('E5', 'E6'), 'E6': ('E6')}
-    if vehicle != 'flow1.0' or vehicle != 'flow2.0':
+    routes1 = {'E0': ('E0', 'E1', 'E2', 'E3', 'E5', 'E6'), 'E1': ('E1', 'E2', 'E3', 'E5', 'E6'), 'E2': ('E2', 'E3', 'E5', 'E6'), 'E3': ('E3', 'E5', 'E6'), 'E4': ('E4', 'E6'), 'E5': ('E5', 'E6'), 'E6': ('E6'), 'J2_0': ('E2', 'E3', 'E5', 'E6'), 'J2_1': ('E2', 'E3', 'E5', 'E6')}
+    routes2 = {'E0': ('E0', 'E1', 'E4', 'E6'), 'E1': ('E1', 'E4', 'E6'), 'E2': ('E2', 'E3', 'E5', 'E6'), 'E3': ('E3', 'E5', 'E6'), 'E4': ('E4', 'E6'), 'E5': ('E5', 'E6'), 'E6': ('E6'), 'J2_0': ('E4', 'E6'), 'J2_1': ('E4', 'E6')}
+    if vehicle not in stopped_vehicles:
         if vehicle in traci.vehicle.getLoadedIDList():
             if action[0]:
                 traci.vehicle.setAccel(vehicle, traci.vehicle.getAccel(vehicle)+5)
@@ -128,12 +145,17 @@ def perform_action(vehicle, action):
                 #     traci.vehicle.setRoute(vehicle, traci.route.getEdges("r_1"))
                 # else:
                 #     traci.vehicle.setRoute(vehicle, traci.route.getEdges("r_0"))
-                if road in routes:
-                    traci.vehicle.setRoute(vehicle, routes[road])
+                route = random.randint(0, 1)
+                if route == 0:
+                    if road in routes1:
+                        traci.vehicle.setRoute(vehicle, routes1[road])
+                    elif road in routes2:
+                        traci.vehicle.setRoute(vehicle, routes2[road])
+                
     
 def calculate_reward(vehicle):
     reward = 0
-    if vehicle != 'flow1.0' or vehicle != 'flow2.0':
+    if vehicle not in stopped_vehicles:
         if vehicle in traci.vehicle.getLoadedIDList():
             collision = traci.simulation.getCollidingVehiclesIDList()
             current_vehicles = traci.vehicle.getLoadedIDList()
@@ -166,8 +188,8 @@ def run_simulation(model):
     traci.load(["-c", "demo2.sumocfg", "--start", "--quit-on-end", "--collision.stoptime", "100","--collision.action", "None", "--time-to-teleport", "-2"])
     # time.sleep(2)
     step = 0
-    s1 = random.randint(10,15)
-    s2 = random.randint(10,15)
+    s1 = random.randint(5,15)
+    s2 = random.randint(8,15)
     while step < 100:
         print("step: ", step)
         if step == s1:
@@ -175,12 +197,12 @@ def run_simulation(model):
             traci.vehicle.setLaneChangeMode("flow1.0",0)
         if step == s2:
             traci.vehicle.setSpeed("flow2.0", 0)
-            # traci.vehicle.setLaneChangeMode("flow2.0",0)
+            traci.vehicle.setLaneChangeMode("flow2.0",0)
         currentVehicles = traci.vehicle.getLoadedIDList()
         # print("vehicles:", currentVehicles)
         state_space = {}
         for vehicle in currentVehicles:
-            if vehicle != 'flow1.0' or vehicle != 'flow2.0':
+            if vehicle not in stopped_vehicles:
                 if vehicle not in allVehicles:
                     allVehicles.append(vehicle)
                 contextSubscription(vehicle)
@@ -199,6 +221,18 @@ def run_simulation(model):
             contradictions = check_contradictions(action)
             if contradictions != -1:
                 perform_action(vehicle_state, action)
+            else:
+                indices = []
+                for i in range(len(action)):
+                    if action[i]:
+                        indices.append(i)
+                if len(indices) != 0:
+                    index = random.randint(0, len(indices)-1)
+                    actionTaken = [False, False, False, False, False]
+                    actionTaken[indices[index]] = True
+                    perform_action(vehicle_state, actionTaken)
+
+
         # print("state space after for: ", state_space)
         #print("2")
         traci.simulationStep()
@@ -208,13 +242,14 @@ def run_simulation(model):
         if step == 30:
             done = True
         for vehicle in currentVehicles:
-            reward = calculate_reward(vehicle)
+            if vehicle not in stopped_vehicles:
+                reward = calculate_reward(vehicle)
             # print("ghjk", state_space)
             # state_space_to_array(state_space)
-            vehiclestate = getV2VState(vehicle)
+                vehiclestate = getV2VState(vehicle)
             # print(vehiclestate.shape)
             # print(vehiclestate)
-            model.remember(state_space[vehicle], current_actions[vehicle], getV2VState(vehicle), reward, done)
+                model.remember(state_space[vehicle], current_actions[vehicle], getV2VState(vehicle), reward, done)
         step += 1 
         # print("4")
     print("current episode ended")
