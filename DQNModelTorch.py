@@ -38,16 +38,17 @@ class V2VActions:
 ### reward 
 
 class V2VRewards:
-    def __init__(self, collision_penalty, speed_reward, end_reward, accel_change_penalty, contradicting_penalty):
+    def __init__(self, collision_penalty, end_reward, contradicting_penalty, stop_penalty):
         self.collision_penalty = collision_penalty
-        self.speed_reward = speed_reward
+        # self.speed_reward = speed_reward
         self.end_reward = end_reward
-        self.accel_change_penalty = accel_change_penalty
+        # self.accel_change_penalty = accel_change_penalty
         self.contradicting_penalty = contradicting_penalty
+        self.stop_penalty = stop_penalty
         # self.efficiency_reward = efficiency_reward
 
 # Example Usage:
-rewards = V2VRewards(-200, 10, 100, -5, -10)
+rewards = V2VRewards(-400, 300, -80, -500)
 
 class DQN(nn.Module):
     def __init__(self, state_size, action_size):
@@ -55,28 +56,31 @@ class DQN(nn.Module):
         self.state_size = state_size
         self.action_size = action_size
         self.memory = []
-        self.layer1 = nn.Linear(60, 5)
+        self.layer1 = nn.Linear(60, 32)
+        self.layer2 = nn.Linear(32, 5)
         # self.layer3 = nn.Linear(16, action_size)
 
     def forward(self, vehicle_states):
-        vehicle_states[0] = np.delete(vehicle_states[0], 0)
-        # print(vehicle_states[0])
-        vehicles = np.array([vehicle_states[0]], dtype=np.float32)
-        for i in vehicle_states[1]:
-            i = np.delete(i, 0)
-            np.append(vehicles, i)
-        # print("mask b")
-        # x = np.array([vehicle_states[0]])
+        # vehicle_states[0] = np.delete(vehicle_states[0], 0)
+        # # print(vehicle_states[0])
+        # vehicles = np.array([vehicle_states[0]], dtype=np.float32)
         # for i in vehicle_states[1]:
-        #     np.append(x, i)
-        # print(vehicles)
-        while vehicles.size != 60 :
-            # print(len(vehicles))
-            vehicles = np.append(vehicles, np.array([0, 0, 0, 0, 0, 0], dtype=np.float32))
-        # print("mask a")
-        x = torch.tensor(vehicles)
+        #     i = np.delete(i, 0)
+        #     np.append(vehicles, i)
+        # # print("mask b")
+        # # x = np.array([vehicle_states[0]])
+        # # for i in vehicle_states[1]:
+        # #     np.append(x, i)
+        # # print(vehicles)
+        # while vehicle_states.size != 60 :
+        #     # print(len(vehicles))
+        #     vehicle_states = np.append(vehicle_states, np.array([0, 0, 0, 0, 0, 0], dtype=np.float32))
+        # print(vehicle_states)
+        print("v s :", vehicle_states)
+        x = torch.tensor(vehicle_states)
         # print("I'm here a")
         x = torch.relu(self.layer1(x))
+        x = torch.relu(self.layer2(x))
         # print("I'm here b")
         # x = torch.relu(self.layer2(x))
         x = torch.sigmoid(x)
@@ -93,6 +97,7 @@ class DQN(nn.Module):
         values = self.forward(state)
         # print(values)
         action = []
+        print("values : ", values)
         for i in values:
             if i > 0.5:
                 action.append(True)
@@ -120,8 +125,8 @@ def state_space_to_array(statespace):
         array = np.array([], dtype=np.float32)
         array2 = np.array([], dtype=np.float32)
         x = np.delete(i[0], 0)
-        for i in x:
-            array2 = np.append(array2, float(i))
+        for k in x:
+            array2 = np.append(array2, float(k))
         array = np.append(array, array2)
         nearby_vehicles = np.array([], dtype=np.float32)
         for j in range(1, len(i[1])):
@@ -141,9 +146,12 @@ def train_dqn(model, batch_size):
     # print("gbhnjkl", states)
     # for i in states:
     #     print(i)
-    states = state_space_to_array(states)
-    print(type(states[8]))
-    states = torch.tensor(states, dtype=torch.float64)
+    # states = state_space_to_array(states)
+    # print(next_states[0])
+    # next_states = state_space_to_array(next_states)
+    # print(next_states[6])
+    # print("states: ", states)
+    states = torch.tensor(states, dtype=torch.float32)
     actions = torch.tensor(actions, dtype=torch.long)
     next_states = torch.tensor(next_states, dtype=torch.float32)
     rewards = torch.tensor(rewards, dtype=torch.float32)
@@ -153,25 +161,26 @@ def train_dqn(model, batch_size):
     # print(next_states)
     # print(rewards)
     # print(dones)
-    current_q = model(states).gather(1, actions.unsqueeze(1))
-    next_q = model(next_states).max(dim=1)[0].unsqueeze(1)
-    
-    target_q = rewards + (1 - dones) * 0.99 * next_q
+
+    current_q = model(states).gather(1, actions)
+    curr = model(next_states)
+    # print("next states: ", curr.shape)
+    next_q = model(next_states)
+    # print("next_q: ", next_q.shape)
+    # print("rewads: ", rewards.shape)
+    # print("dones: ", dones.shape)
+    print(rewards)
+    target_q = rewards.view(-1,1) + (1 - dones.view(-1,1)) * 0.99 * next_q
+
+    # print(current_q.shape)
+    # print(target_q.shape)
+    # print(target_q.detach().shape)
     loss = nn.MSELoss()(current_q, target_q.detach())
     
     optimizer.zero_grad()
     loss.backward()
     optimizer.step() 
 
-
-for i in range(num_episodes):
-    start_simulation()
-    # print("simulation started")
-    run_simulation(model) 
-    # print("simulation ran as well") 
-    train_dqn(model, 50)
-    model.memory = []
-traci.close()    
 
     
 
