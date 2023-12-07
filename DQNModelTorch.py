@@ -4,6 +4,7 @@ from simulation import *
 import torch.optim as optim
 import numpy as np
 import random
+import traci
 
 class V2VState:
     def __init__(self, ego_vehicle, nearby_vehicles):
@@ -54,24 +55,32 @@ class DQN(nn.Module):
         self.state_size = state_size
         self.action_size = action_size
         self.memory = []
-        self.layer1 = nn.Linear(state_size, 32)
-        self.layer2 = nn.Linear(32, 16)
-        self.layer3 = nn.Linear(16, action_size)
+        self.layer1 = nn.Linear(60, 5)
+        # self.layer3 = nn.Linear(16, action_size)
 
     def forward(self, vehicle_states):
         vehicle_states[0] = np.delete(vehicle_states[0], 0)
-        print(vehicle_states[0])
-        vehicles = np.array([vehicle_states[0]], dtype=float)
+        # print(vehicle_states[0])
+        vehicles = np.array([vehicle_states[0]], dtype=np.float32)
         for i in vehicle_states[1]:
             i = np.delete(i, 0)
             np.append(vehicles, i)
+        # print("mask b")
         # x = np.array([vehicle_states[0]])
         # for i in vehicle_states[1]:
         #     np.append(x, i)
+        # print(vehicles)
+        while vehicles.size != 60 :
+            # print(len(vehicles))
+            vehicles = np.append(vehicles, np.array([0, 0, 0, 0, 0, 0], dtype=np.float32))
+        # print("mask a")
         x = torch.tensor(vehicles)
+        # print("I'm here a")
         x = torch.relu(self.layer1(x))
-        x = torch.relu(self.layer2(x))
-        x = torch.sigmoid(self.layer3(x))
+        # print("I'm here b")
+        # x = torch.relu(self.layer2(x))
+        x = torch.sigmoid(x)
+        return x
 
         # network = Sequential()
         # network.add(Dense(24, input_dim = self.state_size, activation='relu'))
@@ -82,12 +91,15 @@ class DQN(nn.Module):
 
     def predict_action(self, state):
         values = self.forward(state)
+        # print(values)
         action = []
         for i in values:
             if i > 0.5:
                 action.append(True)
             else:
                 action.append(False)
+        # print("predict action")
+        # print(action)
         return action
 
     
@@ -100,25 +112,47 @@ action_size = 5
 learning_rate = 0.001
 
 model = DQN(state_size, action_size)
-optimizer = optim.Adam(model.parameters(), lr=learning_rate) 
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+def state_space_to_array(statespace):
+    states = np.array([], dtype=np.float32)
+    for i in statespace:
+        array = np.array([], dtype=np.float32)
+        array2 = np.array([], dtype=np.float32)
+        x = np.delete(i[0], 0)
+        for i in x:
+            array2 = np.append(array2, float(i))
+        array = np.append(array, array2)
+        nearby_vehicles = np.array([], dtype=np.float32)
+        for j in range(1, len(i[1])):
+            if j%7!=0:
+                nearby_vehicles = np.append(nearby_vehicles, float(i[1][j]))
+        array = np.append(array, nearby_vehicles)
+        states = np.append(states, array)
+        # print(type(states[0]))
+    return states
 
 def train_dqn(model, batch_size):
     if len(model.memory) < batch_size:
         return
     
-    batch = model.memory.sample(batch_size)
+    batch = random.sample(model.memory, batch_size)
     states, actions, next_states, rewards, dones = zip(*batch)
-    
-    states = torch.tensor(states, dtype=torch.float32)
+    # print("gbhnjkl", states)
+    # for i in states:
+    #     print(i)
+    states = state_space_to_array(states)
+    print(type(states[8]))
+    states = torch.tensor(states, dtype=torch.float64)
     actions = torch.tensor(actions, dtype=torch.long)
     next_states = torch.tensor(next_states, dtype=torch.float32)
     rewards = torch.tensor(rewards, dtype=torch.float32)
     dones = torch.tensor(dones, dtype=torch.float32)
-    print(states)
-    print(actions)
-    print(next_states)
-    print(rewards)
-    print(dones)
+    # print(states)
+    # print(actions)
+    # print(next_states)
+    # print(rewards)
+    # print(dones)
     current_q = model(states).gather(1, actions.unsqueeze(1))
     next_q = model(next_states).max(dim=1)[0].unsqueeze(1)
     
@@ -129,11 +163,15 @@ def train_dqn(model, batch_size):
     loss.backward()
     optimizer.step() 
 
+
 for i in range(num_episodes):
     start_simulation()
-    run_simulation(model)  
+    # print("simulation started")
+    run_simulation(model) 
+    # print("simulation ran as well") 
     train_dqn(model, 50)
-    model.memory = []    
+    model.memory = []
+traci.close()    
 
     
 
