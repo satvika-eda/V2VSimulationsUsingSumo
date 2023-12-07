@@ -38,16 +38,17 @@ class V2VActions:
 ### reward 
 
 class V2VRewards:
-    def __init__(self, collision_penalty, speed_reward, end_reward, accel_change_penalty, contradicting_penalty):
+    def __init__(self, collision_penalty, end_reward, contradicting_penalty, stop_penalty):
         self.collision_penalty = collision_penalty
-        self.speed_reward = speed_reward
+        # self.speed_reward = speed_reward
         self.end_reward = end_reward
-        self.accel_change_penalty = accel_change_penalty
+        # self.accel_change_penalty = accel_change_penalty
         self.contradicting_penalty = contradicting_penalty
+        self.stop_penalty = stop_penalty
         # self.efficiency_reward = efficiency_reward
 
 # Example Usage:
-rewards = V2VRewards(-200, 10, 100, -5, -10)
+rewards = V2VRewards(-200, 500, -10, -50)
 
 class DQN(nn.Module):
     def __init__(self, state_size, action_size):
@@ -164,6 +165,7 @@ def train_dqn(model, batch_size):
     # print("next_q: ", next_q.shape)
     # print("rewads: ", rewards.shape)
     # print("dones: ", dones.shape)
+    print(rewards)
     target_q = rewards.view(-1,1) + (1 - dones.view(-1,1)) * 0.99 * next_q
 
     # print(current_q.shape)
@@ -175,16 +177,6 @@ def train_dqn(model, batch_size):
     loss.backward()
     optimizer.step() 
 
-
-start_simulation()
-for i in range(num_episodes):
-    print("episode : ", i)
-    # print("simulation started")
-    run_simulation(model) 
-    # print("simulation ran as well") 
-    train_dqn(model, 50)
-    model.memory = []
-traci.close() 
 
     
 

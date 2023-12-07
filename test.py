@@ -67,7 +67,7 @@ while step < 40:
 
         traci.vehicle.setSpeed("flow2.0", 0)
         traci.vehicle.setColor("flow2.0", (255,0,0))
-        # traci.vehicle.setRoute("flow2.2", traci.route.getEdges("r_1"))
+        traci.vehicle.setRoute("flow2.2", traci.route.getEdges("r_1"))
     if step > 5:    
         traci.vehicle.changeLane("flow1.0", 1, 30)
         contextSubscription("flow2.2")
