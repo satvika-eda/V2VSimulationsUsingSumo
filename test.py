@@ -10,7 +10,7 @@ traci.start(sumoCmd)
 step = 0
 # traci.simulation.setParameter("sim", "collision.action", "none")
 # traci.simulation.setParameter("sim", "step-length", "0.2")
-vehicles = traci.vehicle.getIDList()
+vehicles = traci.vehicle.getLoadedIDList()
 print(vehicles)
 
 subscriptionID = 0
@@ -22,6 +22,7 @@ vehicleID = "t_1"
 desiredRange = 10
 for vehicle in vehicles:
     traci.vehicle.subscribeContext(vehicle, traci.constants.CMD_GET_VEHICLE_VARIABLE, desiredRange, [traci.constants.VAR_SPEED, traci.constants.VAR_POSITION, traci.constants.VAR_ANGLE, traci.constants.VAR_ACCELERATION])
+    
 
 # traci.vehicle.subscribeContext(subscriptionID, pos, "E2_0", 10, varIden)
 # traci.vehicle.subscribeContext(subscriptionID, 0, 10, varIDs=None, begin=0, end = 30, parameters=None)
@@ -58,6 +59,8 @@ def getSubscriptionResults(vehicle):
 addedVehciles = []
 # edges = traci.ge
 while step < 40:
+    arrived_vehicles = traci.simulation.getArrivedIDList()
+    print(arrived_vehicles)
     traci.simulationStep()
     time.sleep(1)
     addedVehciles = addAggressiveToAllVehicles(addedVehciles)

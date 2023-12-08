@@ -1,4 +1,5 @@
-from tensorflow.python.keras.models import Sequential
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
 
 class V2VState:
     def __init__(self, ego_vehicle, nearby_vehicles):
