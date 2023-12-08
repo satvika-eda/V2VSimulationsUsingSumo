@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from simulationPPO import run_simulation, start_simulation
+import traci
 
 
 class V2VState:
@@ -21,7 +22,6 @@ class VehicleState:
         self.direction = direction
         self.lane = lane
 
-
 ### action representation
 class V2VActions:
     def __init__(self, accelerate, decelerate, maintain_speed, change_lane, turn):
@@ -31,35 +31,32 @@ class V2VActions:
         self.change_lane = change_lane
         self.turn = turn
 
-# Example Usage:
-# ego_vehicle_actions = V2VActions(accelerate=True, change_lane=True, turn=False)
-
-
 ### reward 
 
 class V2VRewards:
-    def __init__(self, collision_penalty, speed_reward, end_reward, accel_change_penalty):
+    def __init__(self, collision_penalty, end_reward, contradicting_penalty, stop_penalty):
         self.collision_penalty = collision_penalty
-        self.speed_reward = speed_reward
+        # self.speed_reward = speed_reward
         self.end_reward = end_reward
-        self.accel_change_penalty = accel_change_penalty
+        # self.accel_change_penalty = accel_change_penalty
+        self.contradicting_penalty = contradicting_penalty
+        self.stop_penalty = stop_penalty
         # self.efficiency_reward = efficiency_reward
 
 # Example Usage:
-rewards = V2VRewards(-200, 10, 100, -5)
+rewards = V2VRewards(-400, 300, -80, -500)
 
 # Define your neural network architecture for the policy
 class Policy(nn.Module):
     def __init__(self, state_size, action_size):
         super(Policy, self).__init__()
         self.fc1 = nn.Linear(state_size, 64)
-        self.fc2 = nn.Linear(64, 64)
-        self.fc3 = nn.Linear(64, action_size)
+        self.fc2 = nn.Linear(64, action_size)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        x = F.softmax(self.fc3(x), dim=-1)
+        x = F.sigmoid(x)
         return x
 
 # Proximal Policy Optimization algorithm
@@ -111,34 +108,13 @@ class PPO:
 # Main simulation loop
 def main():
     # Define state and action sizes based on your representations
-    state_size =  10 # Define your state size
+    state_size =  14 # Define your state size
     action_size =  5 # Define your action size
 
     ppo = PPO(state_size, action_size)
-    log_probs = []
-    update_interval = 1
-
-    for episode in range(10):
-        start_simulation()
+    start_simulation()
+    for _ in range(10):
         run_simulation(ppo, rewards)
-        # Get the current state from your V2V simulation
-        # new_state =  #TODO new_state # Extract state from your simulation using V2VState
-
-        # Get action and log probability from the PPO model
-        # action, log_prob = ppo.get_action(state)
-
-        # Execute the action in your simulation and get the reward
-        # reward = #TODO calculate reward # Compute reward based on your V2VRewards
-
-        # Store the state, action, log probability, and reward
-        # states = new_state
-        # actions.append(action)
-        # log_probs.append(log_prob)
-        # rewards.append(reward)
-
-        # if episode % update_interval == 0:
-        #     # Update the PPO model using stored experiences
-        #     ppo.update_policy(states, actions, log_probs, rewards)
-        #     states, actions, log_probs, rewards = [], [], [], []
+    traci.close()
 
 main()
