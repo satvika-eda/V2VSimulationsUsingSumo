@@ -51,12 +51,13 @@ class Policy(nn.Module):
     def __init__(self, state_size, action_size):
         super(Policy, self).__init__()
         self.fc1 = nn.Linear(state_size, 64)
-        self.fc2 = nn.Linear(64, action_size)
+        self.fc2 = nn.Linear(64, 64)
+        self.fc3 = nn.Linear(64, action_size)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
-        x = F.sigmoid(x)
+        x = F.sigmoid(self.fc3(x))
         return x
 
 # Proximal Policy Optimization algorithm
@@ -82,6 +83,7 @@ class PPO:
         old_probs = torch.exp(log_probs)
 
         for _ in range(3):  # Update the policy for a few epochs
+            states = torch.tensor(states,dtype=torch.float32)
             new_probs = self.policy(states)
             new_probs = new_probs.gather(1, actions.unsqueeze(1))
 
@@ -97,7 +99,8 @@ class PPO:
     def compute_returns(self, rewards):
         returns = []
         R = 0
-        for r in reversed(rewards):
+        print(rewards)
+        for r in reversed(torch.tensor(rewards,dtype=torch.float32)):
             R = r + self.gamma * R
             returns.insert(0, R)
         returns = np.array(returns)

@@ -3,6 +3,8 @@ import sumolib
 import math
 import random
 import numpy as np
+import torch
+
 
 addedVehicles = []
 allVehicles = []
@@ -246,10 +248,11 @@ def run_simulation(model, rewards):
                 new_states.append(vehiclestate)
                 new_actions.append(action)
                 log_probs.append(log_prob)
-                rewards.append(reward)
+                new_rewards.append(reward)
             # print(vehiclestate.shape)
             # print(vehiclestate)
-        model.update_policy(state_space[vehicle], current_actions[vehicle], getV2VState(vehicle), reward, done)
+        log_probs = torch.tensor(log_probs,dtype=torch.float32)
+        model.update_policy(new_states, new_actions,log_probs, new_rewards)
         step += 1 
         # print("4")
     print("current episode ended")
