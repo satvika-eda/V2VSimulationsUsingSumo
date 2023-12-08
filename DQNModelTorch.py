@@ -48,7 +48,7 @@ class V2VRewards:
         # self.efficiency_reward = efficiency_reward
 
 # Example Usage:
-rewards = V2VRewards(-400, 300, -80, -500)
+rewards = V2VRewards(-400, 500, -80, -300)
 
 class DQN(nn.Module):
     def __init__(self, state_size, action_size):
@@ -56,7 +56,7 @@ class DQN(nn.Module):
         self.state_size = state_size
         self.action_size = action_size
         self.memory = []
-        self.layer1 = nn.Linear(60, 32)
+        self.layer1 = nn.Linear(7*2*6, 32)
         self.layer2 = nn.Linear(32, 5)
         # self.layer3 = nn.Linear(16, action_size)
 
@@ -76,7 +76,7 @@ class DQN(nn.Module):
         #     # print(len(vehicles))
         #     vehicle_states = np.append(vehicle_states, np.array([0, 0, 0, 0, 0, 0], dtype=np.float32))
         # print(vehicle_states)
-        print("v s :", vehicle_states)
+        # print("v s :", vehicle_states)
         x = torch.tensor(vehicle_states)
         # print("I'm here a")
         x = torch.relu(self.layer1(x))
@@ -84,6 +84,7 @@ class DQN(nn.Module):
         # print("I'm here b")
         # x = torch.relu(self.layer2(x))
         x = torch.sigmoid(x)
+       #print(x)
         return x
 
         # network = Sequential()
@@ -114,7 +115,7 @@ class DQN(nn.Module):
 num_episodes = 10
 state_size = 10
 action_size = 5
-learning_rate = 0.001
+learning_rate = 0.00001
 
 model = DQN(state_size, action_size)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
@@ -143,6 +144,7 @@ def train_dqn(model, batch_size):
     
     batch = random.sample(model.memory, batch_size)
     states, actions, next_states, rewards, dones = zip(*batch)
+
     # print("gbhnjkl", states)
     # for i in states:
     #     print(i)
@@ -157,26 +159,20 @@ def train_dqn(model, batch_size):
     rewards = torch.tensor(rewards, dtype=torch.float32)
     dones = torch.tensor(dones, dtype=torch.float32)
     # print(states)
-    # print(actions)
+    #ions)
     # print(next_states)
     # print(rewards)
     # print(dones)
 
     current_q = model(states).gather(1, actions)
-    curr = model(next_states)
-    # print("next states: ", curr.shape)
     next_q = model(next_states)
-    # print("next_q: ", next_q.shape)
-    # print("rewads: ", rewards.shape)
-    # print("dones: ", dones.shape)
-    print(rewards)
+
     target_q = rewards.view(-1,1) + (1 - dones.view(-1,1)) * 0.99 * next_q
 
     # print(current_q.shape)
     # print(target_q.shape)
     # print(target_q.detach().shape)
     loss = nn.MSELoss()(current_q, target_q.detach())
-    
     optimizer.zero_grad()
     loss.backward()
     optimizer.step() 

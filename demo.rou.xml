@@ -30,5 +30,5 @@
     <vehicle id="v_9" depart="0.00" departLane="1" arrivalLane="0" route="r_0"/> -->
 
     <flow id="flow1" begin="0" end="10" number="5" route="r_0" type="DEFAULT_VEHTYPE" color="0,0,1" />
-    <flow id="flow2" begin="0" end="10" number="5" route="r_0" type="DEFAULT_TAXITYPE" color="0,1,0" arrivalLane="1" departLane="1"/>
+    <flow id="flow2" begin="0" end="10" number="5" route="r_0" type="DEFAULT_VEHTYPE" color="0,1,0" arrivalLane="1" departLane="1"/>
 </routes>

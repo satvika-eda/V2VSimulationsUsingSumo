@@ -3,11 +3,15 @@ from DQNModelTorch import *
 import torch.optim as optim
 
 start_simulation()
-for i in range(100):
+epsilon = 1.0  # Initial epsilon value
+epsilon_min = 0.01  # Minimum epsilon value
+epsilon_decay = 0.995 
+for i in range(1000):
     print("episode : ", i)
     # print("simulation started")
-    run_simulation(model) 
     # print("simulation ran as well") 
+    epsilon = max(epsilon * epsilon_decay, epsilon_min)
+    run_simulation(model, epsilon) 
     train_dqn(model, 50)
     model.memory = []
 traci.close() 
