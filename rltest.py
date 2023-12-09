@@ -3,7 +3,7 @@ from collections import deque
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.layers import Dense
 from tensorflow.python.keras.optimizers import Adam
-import pettingzoo
+import random
 
 # state params : Position, Velocity, Acceleration, direction
 # action params : acc/decc, lane changing, turning 

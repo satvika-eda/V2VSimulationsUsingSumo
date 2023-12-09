@@ -5,6 +5,10 @@ import torch.optim as optim
 import numpy as np
 import random
 import traci
+import matplotlib.pyplot as plt
+
+
+lossEp = []
 
 class V2VState:
     def __init__(self, ego_vehicle, nearby_vehicles):
@@ -176,9 +180,6 @@ def train_dqn(model, batch_size):
     optimizer.zero_grad()
     loss.backward()
     optimizer.step() 
-
-
-    
 
 
 
