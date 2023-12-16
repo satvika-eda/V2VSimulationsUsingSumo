@@ -52,7 +52,7 @@ class V2VRewards:
         # self.efficiency_reward = efficiency_reward
 
 # Example Usage:
-rewards = V2VRewards(-400, 500, -80, -300)
+rewards = V2VRewards(-400, 1000, -80, -300)
 
 class DQN(nn.Module):
     def __init__(self, state_size, action_size):
@@ -141,7 +141,7 @@ def state_space_to_array(statespace):
         states = np.append(states, array)
         # print(type(states[0]))
     return states
-
+losses = []
 def train_dqn(model, batch_size):
     if len(model.memory) < batch_size:
         return
@@ -176,11 +176,17 @@ def train_dqn(model, batch_size):
     # print(current_q.shape)
     # print(target_q.shape)
     # print(target_q.detach().shape)
-    loss = nn.MSELoss()(current_q, target_q.detach())
+    loss = nn.CrossEntropyLoss()(current_q, target_q.detach())
+    losses.append(loss.item())
     optimizer.zero_grad()
     loss.backward()
     optimizer.step() 
 
+def graph():
+    print(losses)
+    losses.pop(0)
+    plt.plot(losses)
+    plt.savefig("lossce3.png")
 
 
 

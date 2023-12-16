@@ -2,8 +2,10 @@ import traci
 import time
 import sumolib
 from DQNModelTorch import *
+from DQNModelTorch import V2VRewards
 import math
 import random
+import matplotlib.pyplot as plt
 import numpy as np
 
 addedVehicles = []
@@ -159,14 +161,21 @@ def perform_action(vehicle, action):
                     if road in routes2:
                         traci.vehicle.setRoute(vehicle, routes2[road])
             print("action taken")
-                
+
+rewards = V2VRewards(-400, 1000, -80, -300)               
     
 def calculate_reward(vehicle):
     reward = 0
     if vehicle not in stopped_vehicles:
         if vehicle in traci.vehicle.getLoadedIDList():
             collision = traci.simulation.getCollidingVehiclesIDList()
-            print("Collision: ", collision)
+            # print("Collision: ", collision)
+            edge = traci.vehicle.getRoadID(vehicle)
+            
+            if vehicle not in traci.vehicle.getIDList():
+                print(vehicle)
+                reward += rewards.end_reward
+                print("reached end **********************************")
             if collision is not None and vehicle in collision:
                 reward += rewards.collision_penalty
                 traci.vehicle.setSpeed(vehicle, 0)
@@ -174,11 +183,9 @@ def calculate_reward(vehicle):
                 traci.vehicle.setColor(vehicle, (255, 0, 0))
                 collidedVehicles.append(vehicle)
                 #traci.vehicle.remove(vehicle)
-                print("Collision: ", collision)
-                print("Collision penalty added ---- ")
+                # print("Collision: ", collision)
+                # print("Collision penalty added ---- ")
                 return reward
-            if traci.vehicle.getRoadID(vehicle) == 'E6':
-                reward += rewards.end_reward
             if traci.vehicle.getSpeed(vehicle) == 0 and vehicle not in collision:
                 reward += rewards.stop_penalty
             # if vehicle in accelerated or vehicle in decelerated:
@@ -207,17 +214,19 @@ def random_action():
             action = np.append(action, [False])
     return action
 
-    
+lst = []
+
 # You'll need to replace the random state generation and action selection with actual V2V simulation data and logic.
 def run_simulation(model, epsilon):
     #traci.load(["-c","demo2.sumocfg","--start","--quit-on-end"])
     traci.load(["-c", "demo2.sumocfg", "--start", "--quit-on-end", "--collision.stoptime", "100", "--time-to-teleport", "-2"])
     # time.sleep(2)
     step = 0
-    s1 = random.randint(8,15)
-    s2 = random.randint(8,15)
+    finalR = 0
+    s1 = 8
+    s2 = 15
     # s3 = random.randint(20,35)
-    while step < 150:
+    while step < 100:
         #print("step: ", step)
         if step == s1:
             traci.vehicle.setSpeed("flow1.0", 0)
@@ -284,22 +293,30 @@ def run_simulation(model, epsilon):
         done = False
         #print("3")
         # print("state space after step: ", state_space)
-        if step == 30:
+        if step == 100:
             done = True
         for vehicle in state_space:
             if vehicle not in stopped_vehicles:
                 reward = calculate_reward(vehicle)
-                print("vehicle : ", vehicle, " reward: ", reward)
+                print("vehicle:", vehicle)
+                print("reward:", reward)
+                # print("vehicle : ", vehicle, " reward: ", reward)
             # print("ghjk", state_space)
             # state_space_to_array(state_space)
-                print("calcu;ated reward run")
+                # print("calcu;ated reward run")
                 # vehiclestate = getV2VState(vehicle)
-                print("v2v get done")
+                # print("v2v get done")
             # print(vehiclestate.shape)
             # print(vehiclestate)
                 model.remember(state_space[vehicle], current_actions[vehicle], getV2VState(vehicle), reward, done)
+                if vehicle=="flow1.1":
+                    print(traci.vehicle.getRoadID(vehicle), " 1.2 in edge " )
+                    finalR += reward
+                    print("1.2 : ", reward)
         step += 1 
         # print("4")
+    lst.append(finalR)
+    print("episode rward ", finalR)
     print("current episode ended")
         
         # if step == 8:
@@ -315,3 +332,7 @@ def run_simulation(model, epsilon):
         #     traci.vehicle.setSpeed(collision.victim, 0)
 
         
+# def graph():
+#     print(lst)
+#     plt.plot(lst)
+#     plt.savefig("abc1.png")
