@@ -5,7 +5,7 @@ import torch.optim as optim
 import numpy as np
 import random
 import traci
-
+import matplotlib.pyplot as plt
 
 # V2VState represents the state of the vehicle. It has its own attributes as well as the attributes of the nearby vehicles. 
 class V2VState:
@@ -40,10 +40,6 @@ class V2VActions:
         self.change_lane = change_lane
         self.turn = turn
 
-# Example Usage:
-# ego_vehicle_actions = V2VActions(accelerate=True, change_lane=True, turn=False)
-
-
 ### rewards and penalties
 # V2VRewards represents the rewards and the penalities that are taken into consideration for this model.
 # collision_penaltiy - penality when a collision happens in the simulation
@@ -58,7 +54,7 @@ class V2VRewards:
         self.stop_penalty = stop_penalty
 
 # Below are the final rewards used for this model.
-rewards = V2VRewards(-200, 500, -10, -50)
+rewards = V2VRewards(-400, 1000, -80, -300)
 
 # Model network
 # we are using below DQN to train the model.
@@ -70,17 +66,18 @@ class DQN(nn.Module):
         self.memory = []
         # Input layer the number of neurons depends on the number of vehicles and the parameters we are considering for each vehicle. 
         # In our project, there are 14 vehicles and each vehicle has 6 parameters so there are 84 neurons.
-        self.layer1 = nn.Linear(84, 32)
+        self.layer1 = nn.Linear(state_size*6, 32)
         # The output layer consists of 5 neurons as we have 5 actions, we are using sigmoid activation function so the output values range from 0 to 1. 
         # As vehicles can perform more than 1 actions at the same simulation step, we have considered to perform actions on the vehicle that have more than the threshold value of 0.5.
-        self.layer2 = nn.Linear(32, 5)
+        self.layer2 = nn.Linear(32, 16)
+        self.layer3 = nn.Linear(16,5)
 
     #Forward Propogation
     def forward(self, vehicle_states):
         x = torch.tensor(vehicle_states)
         x = torch.relu(self.layer1(x))
         x = torch.relu(self.layer2(x))
-        x = torch.sigmoid(x)
+        x = torch.sigmoid(self.layer3(x))
         return x
 
     #Prediction
@@ -101,13 +98,15 @@ class DQN(nn.Module):
 # Defining the state_size, actioin_size and the learning rate to train the model
 state_size = 14
 action_size = 5
-learning_rate = 0.001
+learning_rate = 0.00001
 
 # Initializing the model
 model = DQN(state_size, action_size)
 
 # Adam Optimizer
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+losses = []
 
 # Retraining the model with the memory
 def train_dqn(model, batch_size):
@@ -125,10 +124,17 @@ def train_dqn(model, batch_size):
 
     current_q = model(states).gather(1, actions)
     next_q = model(next_states)
+
     target_q = rewards.view(-1,1) + (1 - dones.view(-1,1)) * 0.99 * next_q
 
-    loss = nn.MSELoss()(current_q, target_q.detach())
-    
+    loss = nn.CrossEntropyLoss()(current_q, target_q.detach())
+    losses.append(loss.item())
     optimizer.zero_grad()
     loss.backward()
-    optimizer.step() 
+    optimizer.step()  
+
+def graph():
+    print(losses)
+    losses.pop(0)
+    plt.plot(losses)
+    plt.savefig("lossce3.png")
