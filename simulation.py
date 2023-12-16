@@ -9,18 +9,21 @@ allVehicles = []
 accelerated = []
 decelerated = []
 
+
+
+#Adding aggressive behaviour to promote more collisions
 def add_aggressive_behavior(veh_id):
     traci.vehicle.setAccel(veh_id, 100)
     traci.vehicle.setDecel(veh_id, 4)
     traci.vehicle.setEmergencyDecel(veh_id, 0.1)
     traci.vehicle.setApparentDecel(veh_id, 0.1)
     traci.vehicle.setTau(veh_id, 0.1)
-    # traci.vehicle.setMinGap(veh_id,0)
     traci.vehicle.setImperfection(veh_id, 0.1)
     traci.vehicle.setLaneChangeMode(veh_id, 0)
-    # traci.vehicle.setRoutingMode(veh_id, 0)
     traci.vehicle.setActionStepLength(veh_id,0.2)
 
+
+#function to add the defined agressive behaviour to all vehicles.
 def addAggressiveToAllVehicles():
     allVehicles = traci.vehicle.getLoadedIDList()
     for vehicle in allVehicles:
@@ -29,29 +32,27 @@ def addAggressiveToAllVehicles():
             contextSubscription(vehicle)
             addedVehicles.append(vehicle)
 
+#Helper function to get details of nearby cars from SUMO
 def contextSubscription(vehicle):
     desiredRange = 30
     traci.vehicle.subscribeContext(vehicle, traci.constants.CMD_GET_VEHICLE_VARIABLE, desiredRange)
 
+#Getting the state of a given vehicle and its nearby vehicle
 def getV2VState(vehicle):
     state = np.concatenate((getState(vehicle), getNearByVehicles(vehicle)), dtype=np.float32)
     while len(state) != 60:
         state = np.append(state, np.array([0, 0, 0, 0, 0, 0], dtype=np.float32))
     return state
-    # return np.array([getState(vehicle), getNearByVehicles(vehicle)], dtype=np.float32)
 
+
+#Getting the state information from SUMO using traci
 def getState(vehicle):
-    # id = vehicle
     current_vehicles = traci.vehicle.getLoadedIDList()
     if vehicle in current_vehicles:
-        #print("vehicle: ",vehicle)
         pos = traci.vehicle.getPosition(vehicle) 
     
-        #print("pos : ", pos)
         speed = traci.vehicle.getSpeed(vehicle)
-        #print("speed : ", speed)
         acc = traci.vehicle.getAccel(vehicle)
-        #print("acc : ", acc)
         angle = traci.vehicle.getAngle(vehicle)
         if angle in range(-360,360):
             lane = traci.vehicle.getRoadID(vehicle)
@@ -65,12 +66,12 @@ def getState(vehicle):
                 lane = "1"
         
 
-        # traci.vehicle.getju
-        # print(lane)
         return np.array([pos[0], pos[1], speed, acc, angle, lane[-1]], dtype=np.float32)
     else:
         return np.array([0, 0, 0, 0, 0, 0])
 
+
+#Getting states of nearby vehicles in SUMO using traci.
 def getNearByVehicles(vehicle):
     nearbyVehicles = np.array([])
     res = traci.vehicle.getContextSubscriptionResults(vehicle)
@@ -79,12 +80,15 @@ def getNearByVehicles(vehicle):
             nearbyVehicles = np.append(nearbyVehicles, getState(i))
     return nearbyVehicles
     
+
+#Starting Simulation
 def start_simulation():
     sumoBinary = sumolib.checkBinary("sumo-gui")
     sumoCmd = [sumoBinary, "-c", "demo2.sumocfg", "--start", "--collision.stoptime", "100", "--time-to-teleport", "-2"]
-    #sumoCmd = [sumoBinary, "-c", "demo2.sumocfg"]
     traci.start(sumoCmd)
 
+
+#Checking for contradicting actions.
 def check_contradictions(action):
     if action[0] and action[1] and action[2]:
         return -1
@@ -99,17 +103,19 @@ def check_contradictions(action):
     else:
         return 0
 
+
+#Performing an action on the given vehicle.
 def perform_action(vehicle, action):
     routes = {'E0': ('E0', 'E1', 'E2', 'E3', 'E5', 'E6'), 'E1': ('E1', 'E2', 'E3', 'E5', 'E6'), 'E2': ('E2', 'E3', 'E5', 'E6'), 'E3': ('E3', 'E5', 'E6'), 'E4': ('E4', 'E6'), 'E5': ('E5', 'E6'), 'E6': ('E6')}
     if vehicle != 'flow1.0' or vehicle != 'flow2.0':
         if vehicle in traci.vehicle.getLoadedIDList():
             if action[0]:
+                #Action - Acceleration
                 traci.vehicle.setAccel(vehicle, traci.vehicle.getAccel(vehicle)+5)
                 accelerated.append(vehicle)
             elif action[1]:
+                #Action - Deceleration
                 a = traci.vehicle.getAccel(vehicle)
-                # print("accelration: ", a)
-                # print("acc type: ", type(a))
                 acc = traci.vehicle.getAccel(vehicle) - 5
                 if acc > 0:
                     traci.vehicle.setAccel(vehicle, acc)
@@ -117,20 +123,18 @@ def perform_action(vehicle, action):
                     traci.vehicle.setDecel(vehicle, math.fabs(acc))
                 decelerated.append(vehicle)
             elif action[2]:
+                #Action - Maintain Speed
                 traci.vehicle.setAccel(vehicle, 0)
             elif action[3]:
-                print("I came here")
+                #Action - Change Lane
                 traci.vehicle.changeLane(vehicle, 0 if getState(vehicle)[5] == 1 else 1, 300)
             elif action[4]:
-                print("I'm here")
+                #Action - Change Route
                 road = traci.vehicle.getRoadID(vehicle)
-                # if traci.vehicle.getRoadID(vehicle) == routes[0]:
-                #     traci.vehicle.setRoute(vehicle, traci.route.getEdges("r_1"))
-                # else:
-                #     traci.vehicle.setRoute(vehicle, traci.route.getEdges("r_0"))
                 if road in routes:
                     traci.vehicle.setRoute(vehicle, routes[road])
     
+#Calculate reward
 def calculate_reward(vehicle):
     reward = 0
     if vehicle != 'flow1.0' or vehicle != 'flow2.0':
@@ -143,41 +147,24 @@ def calculate_reward(vehicle):
                 reward += rewards.end_reward
             if traci.vehicle.getSpeed(vehicle) == 0:
                 reward += rewards.stop_penalty
-            # if vehicle in accelerated or vehicle in decelerated:
-            #     reward += rewards.accel_change_penalty
-            # else:
-            #     reward += rewards.speed_reward
         return reward
 
-# def state_space_to_array(statespace):
-#     # print("ASDFGHJKL")
-#     print(statespace)
-#     # print("Satvika")
-#     # print(curr)
-#     curr = np.delete(curr, 0)
-    
-#     # print(curr)
 
-
-    
-# You'll need to replace the random state generation and action selection with actual V2V simulation data and logic.
+#Run the simulation
 def run_simulation(model):
-    #traci.load(["-c","demo2.sumocfg","--start","--quit-on-end"])
     traci.load(["-c", "demo2.sumocfg", "--start", "--quit-on-end", "--collision.stoptime", "100","--collision.action", "None", "--time-to-teleport", "-2"])
-    # time.sleep(2)
     step = 0
     s1 = random.randint(10,15)
     s2 = random.randint(10,15)
     while step < 100:
         print("step: ", step)
+        #Stopping two cars at random positions.
         if step == s1:
             traci.vehicle.setSpeed("flow1.0", 0)
             traci.vehicle.setLaneChangeMode("flow1.0",0)
         if step == s2:
             traci.vehicle.setSpeed("flow2.0", 0)
-            # traci.vehicle.setLaneChangeMode("flow2.0",0)
         currentVehicles = traci.vehicle.getLoadedIDList()
-        # print("vehicles:", currentVehicles)
         state_space = {}
         for vehicle in currentVehicles:
             if vehicle != 'flow1.0' or vehicle != 'flow2.0':
@@ -185,50 +172,30 @@ def run_simulation(model):
                     allVehicles.append(vehicle)
                 contextSubscription(vehicle)
                 state_space[vehicle] = getV2VState(vehicle)
-            #print("POIs: ", state_space[vehicle])
-            #print("vehicle state space: ", vehicle , " space : ", state_space[vehicle])
         addAggressiveToAllVehicles()
         current_actions = {}
-        # print("state space before for: ", state_space)
+
+        #Performing actions
         for vehicle_state in state_space:
-            #print("1")
-            # print("POI: ", state_space[vehicle_state])
             action = model.predict_action(state_space[vehicle_state])
-            #print(vehicle_state)
             current_actions[vehicle_state] = action
             contradictions = check_contradictions(action)
             if contradictions != -1:
                 perform_action(vehicle_state, action)
-        # print("state space after for: ", state_space)
-        #print("2")
+
+        #Simulation steps
         traci.simulationStep()
         done = False
-        #print("3")
-        # print("state space after step: ", state_space)
         if step == 30:
             done = True
+        
+        #Calculating rewards
         for vehicle in currentVehicles:
             reward = calculate_reward(vehicle)
-            # print("ghjk", state_space)
-            # state_space_to_array(state_space)
             vehiclestate = getV2VState(vehicle)
-            # print(vehiclestate.shape)
-            # print(vehiclestate)
             model.remember(state_space[vehicle], current_actions[vehicle], getV2VState(vehicle), reward, done)
         step += 1 
-        # print("4")
     print("current episode ended")
-        
-        # if step == 8:
-        #     traci.vehicle.setSpeed("flow1.0", 0)
-        #     traci.vehicle.setColor("flow1.0", (255,0,0))
-        #     traci.vehicle.setSpeed("flow2.0", 0)
-        #     traci.vehicle.setColor("flow2.0", (255,0,0))
-        # collisions = traci.simulation.getCollisions()
-        # for collision in collisions:
-        #     traci.vehicle.setSpeed(collision.collider, 0)
-        #     traci.vehicle.setEmergencyDecel(collision.collider, 1000)
-        #     traci.vehicle.setColor(collision.collider, (255,0,0))
-        #     traci.vehicle.setSpeed(collision.victim, 0)
+
 
         
