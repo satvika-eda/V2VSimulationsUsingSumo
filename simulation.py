@@ -13,7 +13,7 @@ decelerated = []
 
 
 
-#Adding aggressive behaviour to promote more collisions
+# Defining aggressive behaviour to promote more collisions in the simulation, as sumo takes care of the aggressive behavior in general.
 def add_aggressive_behavior(veh_id):
     traci.vehicle.setAccel(veh_id, 100)
     traci.vehicle.setDecel(veh_id, 4)
@@ -25,7 +25,7 @@ def add_aggressive_behavior(veh_id):
     traci.vehicle.setActionStepLength(veh_id,0.2)
 
 
-#function to add the defined agressive behaviour to all vehicles.
+# function to add the defined agressive behaviour to all vehicles.
 def addAggressiveToAllVehicles():
     allVehicles = traci.vehicle.getLoadedIDList()
     for vehicle in allVehicles:
@@ -34,12 +34,12 @@ def addAggressiveToAllVehicles():
             contextSubscription(vehicle)
             addedVehicles.append(vehicle)
 
-#Helper function to get details of nearby cars from SUMO
+# Helper function to get details of nearby cars from SUMO
 def contextSubscription(vehicle):
     desiredRange = 30
     traci.vehicle.subscribeContext(vehicle, traci.constants.CMD_GET_VEHICLE_VARIABLE, desiredRange)
 
-#Getting the state of a given vehicle and its nearby vehicle
+# Getting the state of a given vehicle and its nearby vehicle
 def getV2VState(vehicle):
     state = np.concatenate((getState(vehicle), getNearByVehicles(vehicle)), dtype=np.float32)
     while len(state) != 60:
@@ -47,7 +47,7 @@ def getV2VState(vehicle):
     return state
 
 
-#Getting the state information from SUMO using traci
+# Getting the state information from SUMO using traci
 def getState(vehicle):
     current_vehicles = traci.vehicle.getLoadedIDList()
     if vehicle in current_vehicles:
@@ -73,7 +73,7 @@ def getState(vehicle):
         return np.array([0, 0, 0, 0, 0, 0])
 
 
-#Getting states of nearby vehicles in SUMO using traci.
+# Getting states of nearby vehicles in SUMO using traci.
 def getNearByVehicles(vehicle):
     nearbyVehicles = np.array([])
     res = traci.vehicle.getContextSubscriptionResults(vehicle)
@@ -83,14 +83,14 @@ def getNearByVehicles(vehicle):
     return nearbyVehicles
     
 
-#Starting Simulation
+# Starting Simulation
 def start_simulation():
     sumoBinary = sumolib.checkBinary("sumo-gui")
     sumoCmd = [sumoBinary, "-c", "demo2.sumocfg", "--start", "--collision.stoptime", "100", "--time-to-teleport", "-2"]
     traci.start(sumoCmd)
 
 
-#Checking for contradicting actions.
+# Checking for contradicting actions.
 def check_contradictions(action):
     if action[0] and action[1] and action[2]:
         return -1
@@ -106,7 +106,7 @@ def check_contradictions(action):
         return 0
 
 
-#Performing an action on the given vehicle.
+# Performing an action on the given vehicle.
 def perform_action(vehicle, action):
     routes = {'E0': ('E0', 'E1', 'E2', 'E3', 'E5', 'E6'), 'E1': ('E1', 'E2', 'E3', 'E5', 'E6'), 'E2': ('E2', 'E3', 'E5', 'E6'), 'E3': ('E3', 'E5', 'E6'), 'E4': ('E4', 'E6'), 'E5': ('E5', 'E6'), 'E6': ('E6')}
     if vehicle != 'flow1.0' or vehicle != 'flow2.0':
@@ -136,7 +136,7 @@ def perform_action(vehicle, action):
                 if road in routes:
                     traci.vehicle.setRoute(vehicle, routes[road])
     
-#Calculate reward
+# Calculating reward based on the state of the vehicle.
 def calculate_reward(vehicle):
     reward = 0
     if vehicle != 'flow1.0' or vehicle != 'flow2.0':
@@ -152,7 +152,7 @@ def calculate_reward(vehicle):
         return reward
 
 
-#Run the simulation
+# Function to Run the simulation for one episode
 def run_simulation(model):
     traci.load(["-c", "demo2.sumocfg", "--start", "--quit-on-end", "--collision.stoptime", "100","--collision.action", "None", "--time-to-teleport", "-2"])
     step = 0

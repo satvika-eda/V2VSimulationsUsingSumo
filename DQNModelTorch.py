@@ -6,13 +6,20 @@ import numpy as np
 import random
 import traci
 
-# Representation of a V2V state (i.e. state of a vehicle and states of the nearby vehicles)
+
+# V2VState represents the state of the vehicle. It has its own attributes as well as the attributes of the nearby vehicles. 
 class V2VState:
     def __init__(self, ego_vehicle, nearby_vehicles):
         self.ego_vehicle = ego_vehicle
         self.nearby_vehicles = nearby_vehicles
 
-# Representation of a vehicle state (i.e. State of a vehicle)
+# VehicleState represents the paramets we are considering for the state of the vehicle. 
+# id - id of the vehicle in the simulation
+# position - To determining the distance between vehicles
+# speed - To maintain relative speed among vehicles to avoid collisions
+# acceleration - To either decelerate or accelerate to avoid collisions
+# direction - To check if there are any other vehicles going in the same direction
+# lane - To see if there are any vehicles stopped in the lane.
 class VehicleState:
     def __init__(self, id, position, speed, acceleration, direction, lane):
         self.id = id
@@ -24,7 +31,7 @@ class VehicleState:
 
 
 
-### action representation
+### V2VActions represents the actions that can be performed on the vehicle for this project.
 class V2VActions:
     def __init__(self, accelerate, decelerate, maintain_speed, change_lane, turn):
         self.accelerate = accelerate
@@ -38,6 +45,11 @@ class V2VActions:
 
 
 ### rewards and penalties
+# V2VRewards represents the rewards and the penalities that are taken into consideration for this model.
+# collision_penaltiy - penality when a collision happens in the simulation
+# end_reward - reward is given, when vehicle reaches its end goal
+# contradicting_penality - As we are performing more than 1 action at one step per vehicle, penality is given when the actions predicted are contradicting with each other like if accelerate and decelerate are given at the same time.
+# stop_penality - when vehicle reaches stop state in simulation
 class V2VRewards:
     def __init__(self, collision_penalty, end_reward, contradicting_penalty, stop_penalty):
         self.collision_penalty = collision_penalty
@@ -45,18 +57,22 @@ class V2VRewards:
         self.contradicting_penalty = contradicting_penalty
         self.stop_penalty = stop_penalty
 
-# Example Usage:
+# Below are the final rewards used for this model.
 rewards = V2VRewards(-200, 500, -10, -50)
 
 # Model network
+# we are using below DQN to train the model.
 class DQN(nn.Module):
     def __init__(self, state_size, action_size):
         super(DQN, self).__init__()
         self.state_size = state_size
         self.action_size = action_size
         self.memory = []
-
+        # Input layer the number of neurons depends on the number of vehicles and the parameters we are considering for each vehicle. 
+        # In our project, there are 14 vehicles and each vehicle has 6 parameters so there are 84 neurons.
         self.layer1 = nn.Linear(84, 32)
+        # The output layer consists of 5 neurons as we have 5 actions, we are using sigmoid activation function so the output values range from 0 to 1. 
+        # As vehicles can perform more than 1 actions at the same simulation step, we have considered to perform actions on the vehicle that have more than the threshold value of 0.5.
         self.layer2 = nn.Linear(32, 5)
 
     #Forward Propogation
@@ -82,18 +98,18 @@ class DQN(nn.Module):
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
-#Defining the state_size
+# Defining the state_size, actioin_size and the learning rate to train the model
 state_size = 14
 action_size = 5
 learning_rate = 0.001
 
-#Model
+# Initializing the model
 model = DQN(state_size, action_size)
 
-#Optimizer
+# Adam Optimizer
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-#Retraining the model with the memory
+# Retraining the model with the memory
 def train_dqn(model, batch_size):
     if len(model.memory) < batch_size:
         return
@@ -116,4 +132,3 @@ def train_dqn(model, batch_size):
     optimizer.zero_grad()
     loss.backward()
     optimizer.step() 
-    
