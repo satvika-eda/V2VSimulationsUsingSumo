@@ -178,20 +178,15 @@ def random_action():
             action = np.append(action, [False])
     return action
 
-lst = []
-
 # Function to Run the simulation for one episode        
 def run_simulation(model, epsilon):
     #traci.load(["-c","demo2.sumocfg","--start","--quit-on-end"])
     traci.load(["-c", "demo2.sumocfg", "--start", "--quit-on-end", "--collision.stoptime", "100", "--time-to-teleport", "-2"])
     # time.sleep(2)
     step = 0
-    finalR = 0
-    s1 = 8
-    s2 = 15
-    # s3 = random.randint(20,35)
+    s1 = 8#random.randint(8,15)
+    s2 = 15#random.randint(8,15)
     while step < 100:
-        print("step: ", step)
         #Stopping two cars at random positions.
         if step == s1:
             traci.vehicle.setSpeed("flow1.0", 0)
@@ -229,7 +224,6 @@ def run_simulation(model, epsilon):
                     index = random.randint(0, len(indices)-1)
                     actionTaken = [False, False, False, False, False]
                     actionTaken[indices[index]] = True
-                    print("action taken : ", actionTaken)
                     perform_action(vehicle_state, actionTaken)
 
         #Simulation steps
@@ -243,7 +237,4 @@ def run_simulation(model, epsilon):
             if vehicle not in stopped_vehicles:
                 reward = calculate_reward(vehicle)
                 model.remember(state_space[vehicle], current_actions[vehicle], getV2VState(vehicle), reward, done)
-                if vehicle=="flow1.1":
-                    finalR += reward
         step += 1 
-    lst.append(finalR)
