@@ -3,6 +3,8 @@ import time
 import sumolib
 from DQNModelTorch import *
 import math
+import numpy as np
+import random 
 
 addedVehicles = []
 allVehicles = []
