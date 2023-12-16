@@ -161,6 +161,7 @@ def calculate_reward(vehicle):
             current_vehicles = traci.vehicle.getLoadedIDList()
             if collision is not None and vehicle in collision:
                 reward += rewards.collision_penalty
+                traci.vehicle.setColor(vehicle, (255, 0, 0))
             if traci.vehicle.getRoadID(vehicle) == 'E6':
                 reward += rewards.end_reward
             if traci.vehicle.getSpeed(vehicle) == 0:
@@ -185,11 +186,11 @@ def calculate_reward(vehicle):
 # You'll need to replace the random state generation and action selection with actual V2V simulation data and logic.
 def run_simulation(model):
     #traci.load(["-c","demo2.sumocfg","--start","--quit-on-end"])
-    traci.load(["-c", "demo2.sumocfg", "--start", "--quit-on-end", "--collision.stoptime", "100","--collision.action", "None", "--time-to-teleport", "-2"])
+    traci.load(["-c", "demo2.sumocfg", "--quit-on-end", "--collision.stoptime", "100","--collision.action", "None", "--time-to-teleport", "-2"])
     # time.sleep(2)
     step = 0
-    s1 = random.randint(5,15)
-    s2 = random.randint(8,15)
+    s1 = random.randint(15,25)
+    s2 = random.randint(18,25)
     while step < 100:
         print("step: ", step)
         if step == s1:

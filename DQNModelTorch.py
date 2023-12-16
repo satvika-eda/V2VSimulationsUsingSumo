@@ -48,7 +48,7 @@ class V2VRewards:
         # self.efficiency_reward = efficiency_reward
 
 # Example Usage:
-rewards = V2VRewards(-400, 300, -80, -500)
+rewards = V2VRewards(100, 10, -80, -500)
 
 class DQN(nn.Module):
     def __init__(self, state_size, action_size):
@@ -57,8 +57,8 @@ class DQN(nn.Module):
         self.action_size = action_size
         self.memory = []
         self.layer1 = nn.Linear(60, 32)
-        self.layer2 = nn.Linear(32, 5)
-        # self.layer3 = nn.Linear(16, action_size)
+        self.layer2 = nn.Linear(32, 16)
+        self.layer3 = nn.Linear(16, action_size)
 
     def forward(self, vehicle_states):
         # vehicle_states[0] = np.delete(vehicle_states[0], 0)
@@ -83,11 +83,11 @@ class DQN(nn.Module):
         x = torch.relu(self.layer2(x))
         # print("I'm here b")
         # x = torch.relu(self.layer2(x))
-        x = torch.sigmoid(x)
+        x = torch.sigmoid(self.layer3(x))
         return x
 
         # network = Sequential()
-        # network.add(Dense(24, input_dim = self.state_size, activation='relu'))
+        # network.a]dd(Dense(24, input_dim = self.state_size, activation='relu'))
         # network.add(Dense(24, activation='relu'))
         # network.add(Dense(self.action_size, activation='sigmoid'))
         # network.compile(loss='mse', optimizer=adam_v2.Adam(lr=self.learning_rate))
@@ -114,7 +114,7 @@ class DQN(nn.Module):
 num_episodes = 10
 state_size = 10
 action_size = 5
-learning_rate = 0.001
+learning_rate = 0.00001
 
 model = DQN(state_size, action_size)
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
