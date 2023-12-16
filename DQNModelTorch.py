@@ -29,8 +29,6 @@ class VehicleState:
         self.direction = direction
         self.lane = lane
 
-
-
 ### V2VActions represents the actions that can be performed on the vehicle for this project.
 class V2VActions:
     def __init__(self, accelerate, decelerate, maintain_speed, change_lane, turn):
@@ -101,15 +99,16 @@ action_size = 5
 learning_rate = 0.00001
 
 # Initializing the model
-model = DQN(state_size, action_size)
+# model = DQN(state_size, action_size)
 
 # Adam Optimizer
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
 
 losses = []
 
 # Retraining the model with the memory
 def train_dqn(model, batch_size):
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     if len(model.memory) < batch_size:
         return
     
@@ -128,13 +127,12 @@ def train_dqn(model, batch_size):
     target_q = rewards.view(-1,1) + (1 - dones.view(-1,1)) * 0.99 * next_q
 
     loss = nn.CrossEntropyLoss()(current_q, target_q.detach())
-    losses.append(loss.item())
+    losses.append(loss.detach().numpy())
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()  
 
 def graph():
     print(losses)
-    losses.pop(0)
     plt.plot(losses)
-    plt.savefig("lossce3.png")
+    plt.savefig("lossCE.png")

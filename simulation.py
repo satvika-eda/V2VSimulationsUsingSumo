@@ -1,7 +1,8 @@
 import traci
 import time
 import sumolib
-from DQNModelTorch import *
+from DQNModelTorch import V2VRewards
+from DQNModelTorch import V2VState
 import math
 import numpy as np
 import random 
@@ -184,8 +185,8 @@ def run_simulation(model, epsilon):
     traci.load(["-c", "demo2.sumocfg", "--start", "--quit-on-end", "--collision.stoptime", "100", "--time-to-teleport", "-2"])
     # time.sleep(2)
     step = 0
-    s1 = 8#random.randint(8,15)
-    s2 = 15#random.randint(8,15)
+    s1 = random.randint(8,15)
+    s2 = random.randint(8,15)
     while step < 100:
         #Stopping two cars at random positions.
         if step == s1:
